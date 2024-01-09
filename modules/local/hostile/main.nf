@@ -16,11 +16,11 @@ process HOSTILE {
 
     script:
     """
-    if [ ${fastq[1]} ]
+    if [ ${fastq[1]} == null ]
     then
-        hostile clean --fastq1 ${fastq[0]}
+        hostile clean --fastq1 ${fastq[0]} --aligner minimap2 --index ${params.hostile_index_long}
     else
-        hostile clean --fastq1 ${fastq[0]} --fastq2 ${fastq[1]}
+        hostile clean --fastq1 ${fastq[0]} --fastq2 ${fastq[1]} --aligner bowtie2 --index ${params.hostile_index_short}
     fi
 
     cat <<-END_VERSIONS > versions.yml

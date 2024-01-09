@@ -37,6 +37,22 @@
                     "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
                     "fa_icon": "fas fa-folder-open"
                 },
+                "hostile_index_long": {
+                    "type": "string",
+                    "format": "file-path",
+                    "schema": "assets/schema_input.json",
+                    "description": "Path to Minimap2 index for Hostile.",
+                    "help_text": "These can be downloaded from: https://github.com/bede/hostile.",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "hostile_index_short": {
+                    "type": "string",
+                    "format": "file-path",
+                    "schema": "assets/schema_input.json",
+                    "description": "Path to Bowtie2 index for Hostile.",
+                    "help_text": "This can be downloaded from: https://github.com/bede/hostile.",
+                    "fa_icon": "fas fa-file-csv"
+                },
                 "platform": {
                     "type": "string",
                     "fa_icon": "fas fa-hdd",
