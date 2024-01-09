@@ -1,0 +1,14 @@
+name: basic-sequence-stats
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - fastqc=0.12.1
+  - seqkit=2.5.1
+  - nextflow=23.10.0
+  - nanoplot=1.41.6
+  - csvtk=0.28.0
+  - yaml=0.2.5
+  - multiqc=1.17
