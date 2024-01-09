@@ -11,6 +11,9 @@ workflow LOAD_SHEET {
             .map { create_read_channels(it) }
             .set { reads }
 
+        reads.map { meta, illuminaFQ, nanopore -> meta }
+            .set { meta }
+
         reads.map { meta, illuminaFQ, nanopore -> [ meta, illuminaFQ ] }
             .filter { meta, illuminaFQ -> illuminaFQ[0] != 'NA' && illuminaFQ[1] != 'NA' }
             .set { illumina }
@@ -19,14 +22,11 @@ workflow LOAD_SHEET {
             .filter { meta, nanopore -> nanopore != 'NA' }
             .set { nanopore }
 
-        reads.map { meta, illuminaFQ, nanopore -> meta.id }
-            .set {ids}
-
     emit:
         reads      // channel: [ val(meta), ( [ illumina ] | nanopore ) ]
+        meta
         illumina
         nanopore
-        ids
 }
 
 // Function to get list of [ meta, [ illumina1, illumina2 ], nanopore ]

@@ -1,14 +1,14 @@
-name: basic-sequence-stats
+name: basic-sequence-trimmer
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
   - python=3.10
-  - fastqc=0.12.1
-  - seqkit=2.5.1
   - nextflow=23.10.0
-  - nanoplot=1.41.6
-  - csvtk=0.28.0
   - yaml=0.2.5
-  - multiqc=1.17
+  - chopper=0.6.0
+  - hostile=0.4.0
+  - bbmap=39.01
+  - porechop=0.2.4
+  - multiqc=1.14

@@ -1,10 +1,10 @@
 #!/usr/bin/env nextflow
 
- /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*\
-|   basic-sequence-stats                                               |
-|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
-|   Github : https://github.com/provlab-bioinfo/basic-sequence-stats   |
- \*-------------------------------------------------------------------*/
+ /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*\
+|   basic-sequence-trimmer                                               |
+|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|
+|   Github : https://github.com/provlab-bioinfo/basic-sequence-trimmer   |
+ \*---------------------------------------------------------------------*/
 
 nextflow.enable.dsl = 2
 WorkflowMain.initialise(workflow, params, log)
@@ -14,35 +14,41 @@ WorkflowMain.initialise(workflow, params, log)
 // if ((params.sheet == null && params.folder) == null || (params.sheet != null && params.folder != null)) {
 //     exit 1, "Must specify one of '--folder' or '--sheet'!"}
 
-include { LOAD_SHEET } from                  './subworkflows/local/load_sheet'
-include { FOLDER_CHECK } from                './subworkflows/local/folder_check'
-include { QC } from                          './subworkflows/local/qc'
-include { REPORT } from                      './subworkflows/local/report'
+include { LOAD_SHEET }                  from './subworkflows/local/load_sheet'
+include { TRIM_ILLUMINA }               from './subworkflows/local/trim_illumina'
+include { TRIM_NANOPORE }               from './subworkflows/local/trim_nanopore'
+include { DEHOST as DEHOST_ILLUMINA }   from './subworkflows/local/dehost'
+include { DEHOST as DEHOST_NANOPORE }   from './subworkflows/local/dehost'
 include { CUSTOM_DUMPSOFTWAREVERSIONS } from './modules/nf-core/custom/dumpsoftwareversions/main'
 
 workflow {
     
-    ch_versions = Channel.empty()
+    versions = Channel.empty()
 
     // SUBWORKFLOW: Read in samplesheet
     LOAD_SHEET(file(params.sheet))
 
     // SUBWORKFLOW: Perform QC
-    QC(LOAD_SHEET.out.illumina, LOAD_SHEET.out.nanopore)
-    ch_versions = ch_versions.mix(QC.out.versions)
+    TRIM_ILLUMINA(LOAD_SHEET.out.illumina)
+    TRIM_NANOPORE(LOAD_SHEET.out.nanopore)
+    versions = versions.mix(TRIM_ILLUMINA.out.versions)
+    versions = versions.mix(TRIM_NANOPORE.out.versions)
 
     //SUBWORKFLOW: Dehosting
-    DEHOST(LOAD_SHEET.out.illumina, LOAD_SHEET.out.nanopore)
-    ch_versions = ch_versions.mix(DEHOST.out.versions)
+    TRIM_ILLUMINA.out.reads.view()
+    DEHOST_ILLUMINA(TRIM_ILLUMINA.out.reads)
+    illumina_reads = DEHOST_ILLUMINA.out.reads
 
-    // SUBWORKFLOW: Generate reports
-    REPORT(QC.out.illumina, QC.out.nanopore)
-    ch_versions = ch_versions.mix(REPORT.out.versions)
+    TRIM_NANOPORE.out.reads.view()
+    DEHOST_NANOPORE(TRIM_NANOPORE.out.reads)
+    nanopore_reads = DEHOST_NANOPORE.out.reads
+
+    versions = versions.mix(DEHOST_ILLUMINA.out.versions)
 
     // SUBWORKFLOW: Get versioning
-    CUSTOM_DUMPSOFTWAREVERSIONS (ch_versions.unique().collectFile(name: 'collated_versions.yml'))    
+    CUSTOM_DUMPSOFTWAREVERSIONS (versions.unique().collectFile(name: 'collated_versions.yml'))    
 
     emit:
-        reads
-        versions = ch_versions
+        reads = [ LOAD_SHEET.out.meta, illumina_reads, nanopore_reads ]
+        versions
 }

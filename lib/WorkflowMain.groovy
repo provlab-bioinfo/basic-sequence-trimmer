@@ -81,19 +81,9 @@ class WorkflowMain {
         // Check AWS batch settings
         NfcoreTemplate.awsBatch(workflow, params)
 
-        // Check sequencing platform
-        def platformList = ['illumina', 'nanopore']
-        if (!params.platform) {
-            log.error("Platform not specified. Valid options: '${platformList.join("', '")}'. E.g., '--platform illumina'. ")
-            System.exit(1)
-        } else if (!platformList.contains(params.platform)) {
-            log.error("Invalid platform option: '${params.platform}'. Valid options: '${platformList.join("', '")}'. E.g., '--platform illumina'. ")
-            System.exit(1)
-        }
-
         // Check input has been provided
-        if ((!params.folder && !params.sheet) || (params.folder && params.sheet)) {
-            log.error("Provide only one of an input samplesheet or input folder to the pipeline. E.g., '--sheet samplesheet.csv' or '--folder /path/to/folder/")
+        if (!params.sheet) {
+            log.error("Please provide an input samplesheet to the pipeline e.g. '--sheet samplesheet.csv'")
             System.exit(1)
         }
 
