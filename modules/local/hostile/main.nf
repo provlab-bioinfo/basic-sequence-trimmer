@@ -16,7 +16,7 @@ process HOSTILE {
 
     script:
     """
-    if [ -z ${fastq[1]}]
+    if [ ${fastq[1]} ]
     then
         hostile clean --fastq1 ${fastq[0]}
     else

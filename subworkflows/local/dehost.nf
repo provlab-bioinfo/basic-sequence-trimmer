@@ -1,4 +1,4 @@
-include {HOSTILE as HOSTILE_DEHOST} from '../../modules/local/hostile/main.nf'
+include {HOSTILE as DEHOST_HOSTILE} from '../../modules/local/hostile/main.nf'
 
 workflow DEHOST {   
     take:
@@ -7,10 +7,10 @@ workflow DEHOST {
     main:
         versions = Channel.empty()
         
-        HOSTILE_DEHOST(reads)
-        versions = versions.mix(HOSTILE_DEHOST.out.versions.first())
+        DEHOST_HOSTILE(reads)
+        versions = versions.mix(DEHOST_HOSTILE.out.versions.first())
 
     emit:
-        reads = HOSTILE_DEHOST.out.fastq
+        reads = DEHOST_HOSTILE.out.fastq
         versions
 }

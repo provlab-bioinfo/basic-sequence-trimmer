@@ -31,15 +31,16 @@ workflow {
     // SUBWORKFLOW: Perform QC
     TRIM_ILLUMINA(LOAD_SHEET.out.illumina)
     TRIM_NANOPORE(LOAD_SHEET.out.nanopore)
+
     versions = versions.mix(TRIM_ILLUMINA.out.versions)
     versions = versions.mix(TRIM_NANOPORE.out.versions)
 
     //SUBWORKFLOW: Dehosting
-    TRIM_ILLUMINA.out.reads.view()
+    // TRIM_ILLUMINA.out.reads.view()
+
     DEHOST_ILLUMINA(TRIM_ILLUMINA.out.reads)
     illumina_reads = DEHOST_ILLUMINA.out.reads
 
-    TRIM_NANOPORE.out.reads.view()
     DEHOST_NANOPORE(TRIM_NANOPORE.out.reads)
     nanopore_reads = DEHOST_NANOPORE.out.reads
 
@@ -49,6 +50,7 @@ workflow {
     CUSTOM_DUMPSOFTWAREVERSIONS (versions.unique().collectFile(name: 'collated_versions.yml'))    
 
     emit:
+        // reads = [ LOAD_SHEET.out.meta, TRIM_ILLUMINA.out.reads, TRIM_NANOPORE.out.reads ]
         reads = [ LOAD_SHEET.out.meta, illumina_reads, nanopore_reads ]
         versions
 }
