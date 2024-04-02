@@ -18,9 +18,11 @@ The output file structure is determined by the `outdir`:
 ```
 <outdir>
    ├── pipeline_info
-   │      ├── samplesheet.csv
    │      └── software_versions.yml
    └── <label>
+          ├── samplesheet.csv
           └── fastq
                  └── [prefix_]<ID>.fastq[.gz]
+
+                 
 ```

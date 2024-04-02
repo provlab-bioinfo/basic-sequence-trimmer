@@ -8,6 +8,7 @@ workflow TRIM_ILLUMINA {
         versions = Channel.empty()
 
         TRIM_BBDUK(reads,[])
+
         versions = versions.mix(TRIM_BBDUK.out.versions.first())
 
     emit:

@@ -2,6 +2,8 @@
 // Check input samplesheet and get read channels
 //
 
+// include { mergeCsv } from 'plugin/nf-boost'
+
 workflow LOAD_SHEET {
     take:
         samplesheet // file: /path/to/samplesheet.csv
@@ -27,6 +29,7 @@ workflow LOAD_SHEET {
         meta
         illumina
         nanopore
+        //samplesheet
 }
 
 // Function to get list of [ meta, [ illumina1, illumina2 ], nanopore ]
@@ -56,3 +59,95 @@ def checkRead(String read) {
     if (file(read).size() == 0)  exit 1, "ERROR: Please check input samplesheet -> FASTQ file is empty!\n   ${read}"
     return file(read)
 }
+
+workflow SAVE_SHEET {
+    take:
+        reads // channel: [ val(meta), ( [ illumina ] | nanopore ) ]
+
+    main:
+        reads = reads.map { meta, illumina, nanopore -> [meta.id, illumina[0], illumina[1], nanopore] }
+        SAVE_TO_CSV (reads).csv.collectFile(name: 'samplesheet.csv', keepHeader: true).map { it }.set { samplesheet }
+        //SAVE_TO_CSV.out.csv.view{it -> it.text}
+
+    emit:
+        samplesheet
+}
+
+// process SAVE_TO_CSV {
+
+//   input:
+//     reads
+
+//   output:
+//     path 'samplesheet.new.csv', emit: samplesheet
+
+//   exec:
+
+//     reads.map { meta, illumina, nanopore -> meta.id, illumina[0], illumina[1], nanopore }.set { reads }
+
+//     def path = task.workDir.resolve('samplesheet.new.csv')
+//     mergeCsv(reads, path, sep: ',')
+// }
+
+process SAVE_TO_CSV {
+    tag "$folder"
+    label 'process_medium'
+
+    conda "conda-forge::python=3.9.5"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/python:3.9--1' :
+        'biocontainers/python:3.9--1' }"
+
+    input:
+        tuple val(id), val(illumina1), val(illumina2), val(nanopore)
+
+    output:
+        path '*.csv'       , emit: csv
+        path "versions.yml", emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
+
+    script: // This script is bundled with the pipeline, in nf-core/rnaseq/bin/
+        """
+        touch ${id}_samplesheet.csv
+        echo "ID,illumina1,illumina2,nanopore" >> ${id}_samplesheet.csv
+        echo "${id},${illumina1},${illumina2},${nanopore}" >> ${id}_samplesheet.csv
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python --version | sed 's/Python //g')
+        END_VERSIONS
+        """
+}
+
+def create_write_channels(LinkedHashMap row) {
+
+
+
+}
+
+// include { mergeCsv } from 'plugin/nf-boost'
+
+// process RECORDS_TO_CSV {
+//   publishDir 'results'
+
+//   input:
+//   val records
+
+//   output:
+//   path 'records.txt'
+
+//   exec:
+//   def path = task.workDir.resolve('records.txt')
+//   mergeCsv(records, path, sep: '\t')
+// }
+
+
+// workflow {
+//   Channel.of( 1..10 )
+//     | map { i -> ['id': i, 'name': "record_${i}"] }
+//     | collect
+//     | RECORDS_TO_CSV
+//     | view { csv -> csv.text }
+// }
