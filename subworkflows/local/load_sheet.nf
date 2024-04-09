@@ -109,6 +109,21 @@ process SAVE_TO_CSV {
         task.ext.when == null || task.ext.when
 
     script: // This script is bundled with the pipeline, in nf-core/rnaseq/bin/
+
+        def out = params.outdir + "/" + params.label + "/fastq"
+        def getOutPath = {path -> path == "NA" ? "NA" : new java.io.File(out, new java.io.File(path.toString()).getName()).getCanonicalPath()} 
+
+        log.debug("load_sheet.id: ")
+        log.debug(id)
+
+        illumina1 = getOutPath(illumina1)
+        illumina2 = getOutPath(illumina2)
+        nanopore = getOutPath(nanopore)
+
+        log.debug("illumina1: " + illumina1)
+        log.debug("illumina2: " + illumina2)
+        log.debug("nanopore: " + nanopore)
+
         """
         touch ${id}_samplesheet.csv
         echo "ID,illumina1,illumina2,nanopore" >> ${id}_samplesheet.csv
