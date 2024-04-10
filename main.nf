@@ -55,13 +55,10 @@ workflow {
     //illumina_reads.view{ it -> "Illumina: " + it}
     //nanopore_reads.view{ it -> "Nanopore: " + it}
     reads = illumina_reads.join(nanopore_reads, remainder: true)
-    reads.view{ it -> "Reads before: " + it}                   
+    //reads.view{ it -> "Reads before: " + it}                   
 
-    reads = reads.map { meta, illumina, nanopore -> [ meta , illumina ? illumina : ["NA","NA"], nanopore ? nanopore : "NA" ] }
-    reads.view{ it -> "Reads after: " + it}
-
-    SAVE_SHEET(reads)
-    samplesheet = SAVE_SHEET.out.samplesheet
+    SAVE_SHEET(reads.toList())
+    //samplesheet = SAVE_SHEET.out.samplesheet
     //samplesheet = Channel.empty()
 
     // SUBWORKFLOW: Get versioning
@@ -70,6 +67,6 @@ workflow {
     emit:
         // reads = [ LOAD_SHEET.out.meta, TRIM_ILLUMINA.out.reads, TRIM_NANOPORE.out.reads ]
         reads //= [ LOAD_SHEET.out.meta, illumina_reads, nanopore_reads ]
-        samplesheet
+        samplesheet = SAVE_SHEET.out.samplesheet
         versions
 }

@@ -65,76 +65,68 @@ workflow SAVE_SHEET {
         reads // channel: [ val(meta), ( [ illumina ] | nanopore ) ]
 
     main:
-        reads = reads.map { meta, illumina, nanopore -> [meta.id, illumina[0], illumina[1], nanopore] }
-        SAVE_TO_CSV (reads).csv.collectFile(name: 'samplesheet.csv', keepHeader: true).map { it }.set { samplesheet }
-        //SAVE_TO_CSV.out.csv.view{it -> it.text}
+        //reads.view{ "SAVE_SHEET reads: $it" }
+        def getOutPath = {path -> (path == "NA" || path == null) ? "NA" : new java.io.File(params.outdir + "/" + params.label + "/fastq", new java.io.File(path.toString()).getName()).getCanonicalPath()} 
+        reads
+          | flatMap
+          | map { meta, illumina, nanopore -> ["id": meta.id, "illumina1": getOutPath(illumina[0]), "illumina2": getOutPath(illumina[1]), "nanopore": getOutPath(nanopore)] }
+          | collect
+          | SAVE_TO_CSV 
+          | set {samplesheet}
+        // SAVE_TO_CSV(reads.collect()).set { samplesheet }
+        //reads.view{ "SAVE_SHEET reads2: $it" }
+        //SAVE_TO_CSV(reads).csv.collectFile(name: 'samplesheet.csv', keepHeader: true).map { it }.set { samplesheet }
+        //SAVE_TO_CSV.out.versions.view{ "Versions: $it" }
+        //SAVE_TO_CSV.out.csv.view{ "Samplesheets: $it" }
+        //samplesheet = Channel.empty()
 
     emit:
         samplesheet
 }
 
-// process SAVE_TO_CSV {
-
-//   input:
-//     reads
-
-//   output:
-//     path 'samplesheet.new.csv', emit: samplesheet
-
-//   exec:
-
-//     reads.map { meta, illumina, nanopore -> meta.id, illumina[0], illumina[1], nanopore }.set { reads }
-
-//     def path = task.workDir.resolve('samplesheet.new.csv')
-//     mergeCsv(reads, path, sep: ',')
-// }
-
 process SAVE_TO_CSV {
-    tag "$folder"
-    label 'process_medium'
 
-    conda "conda-forge::python=3.9.5"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.9--1' :
-        'biocontainers/python:3.9--1' }"
+  input:
+    val reads
 
-    input:
-        tuple val(id), val(illumina1), val(illumina2), val(nanopore)
+  output:
+    path 'samplesheet.csv', emit: samplesheet
 
-    output:
-        path '*.csv'       , emit: csv
-        path "versions.yml", emit: versions
-
-    when:
-        task.ext.when == null || task.ext.when
-
-    script: // This script is bundled with the pipeline, in nf-core/rnaseq/bin/
-
-        def out = params.outdir + "/" + params.label + "/fastq"
-        def getOutPath = {path -> path == "NA" ? "NA" : new java.io.File(out, new java.io.File(path.toString()).getName()).getCanonicalPath()} 
-
-        log.debug("load_sheet.id: ")
-        log.debug(id)
-
-        illumina1 = getOutPath(illumina1)
-        illumina2 = getOutPath(illumina2)
-        nanopore = getOutPath(nanopore)
-
-        log.debug("illumina1: " + illumina1)
-        log.debug("illumina2: " + illumina2)
-        log.debug("nanopore: " + nanopore)
-
-        """
-        touch ${id}_samplesheet.csv
-        echo "ID,illumina1,illumina2,nanopore" >> ${id}_samplesheet.csv
-        echo "${id},${illumina1},${illumina2},${nanopore}" >> ${id}_samplesheet.csv
-
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            python: \$(python --version | sed 's/Python //g')
-        END_VERSIONS
-        """
+  exec:
+    mergeCsv(reads, task.workDir.resolve('samplesheet.csv'), sep: '\t')
 }
+
+// process SAVE_TO_CSV {
+//     tag "$id"
+//     label 'process_medium'
+
+//     conda "conda-forge::python=3.9.5"
+//     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+//         'https://depot.galaxyproject.org/singularity/python:3.9--1' :
+//         'biocontainers/python:3.9--1' }"
+
+//     input:
+//         tuple val(id), val(illumina1), val(illumina2), val(nanopore)
+
+//     output:
+//         path '*.csv'       , emit: csv
+//         path "versions.yml", emit: versions
+
+//     when:
+//         task.ext.when == null || task.ext.when
+
+//     script: // This script is bundled with the pipeline, in nf-core/rnaseq/bin/
+//         """
+//         touch ${id}_samplesheet.csv
+//         echo "ID,illumina1,illumina2,nanopore" >> ${id}_samplesheet.csv
+//         echo "${id},${illumina1},${illumina2},${nanopore}" >> ${id}_samplesheet.csv
+
+//         cat <<-END_VERSIONS > versions.yml
+//         "${task.process}":
+//             python: \$(python --version | sed 's/Python //g')
+//         END_VERSIONS
+//         """
+// }
 
 def create_write_channels(LinkedHashMap row) {
 
