@@ -38,9 +38,7 @@ workflow {
     versions = versions.mix(TRIM_ILLUMINA.out.versions)
     versions = versions.mix(TRIM_NANOPORE.out.versions)
 
-    //SUBWORKFLOW: Dehosting
-    // TRIM_ILLUMINA.out.reads.view()
-
+    // SUBWORKFLOW: Dehosting
     DEHOST_ILLUMINA(TRIM_ILLUMINA.out.reads)
     illumina_reads = DEHOST_ILLUMINA.out.reads
     versions = versions.mix(DEHOST_ILLUMINA.out.versions)
@@ -49,24 +47,15 @@ workflow {
     nanopore_reads = DEHOST_NANOPORE.out.reads
     versions = versions.mix(DEHOST_NANOPORE.out.versions)
 
-    // illumina_reads = illumina_reads.join(ids, remainder: true).map { meta, illumina, blank -> [ meta , illumina ] }
-    // nanopore_reads = nanopore_reads.join(ids, remainder: true).map { meta, nanopore, blank -> [ meta , nanopore ] }
-
-    //illumina_reads.view{ it -> "Illumina: " + it}
-    //nanopore_reads.view{ it -> "Nanopore: " + it}
+    // SUBWORKFLOW: Create new samplesheet
     reads = illumina_reads.join(nanopore_reads, remainder: true)
-    //reads.view{ it -> "Reads before: " + it}                   
-
     SAVE_SHEET(reads.toList())
-    //samplesheet = SAVE_SHEET.out.samplesheet
-    //samplesheet = Channel.empty()
+    samplesheet = SAVE_SHEET.out.samplesheet
 
     // SUBWORKFLOW: Get versioning
     CUSTOM_DUMPSOFTWAREVERSIONS (versions.unique().collectFile(name: 'collated_versions.yml'))    
 
     emit:
-        // reads = [ LOAD_SHEET.out.meta, TRIM_ILLUMINA.out.reads, TRIM_NANOPORE.out.reads ]
-        reads //= [ LOAD_SHEET.out.meta, illumina_reads, nanopore_reads ]
-        samplesheet = SAVE_SHEET.out.samplesheet
+        samplesheet
         versions
 }

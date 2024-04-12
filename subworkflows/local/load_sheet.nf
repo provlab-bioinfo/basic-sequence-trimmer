@@ -65,96 +65,43 @@ workflow SAVE_SHEET {
         reads // channel: [ val(meta), ( [ illumina ] | nanopore ) ]
 
     main:
-        //reads.view{ "SAVE_SHEET reads: $it" }
         def getOutPath = {path -> (path == "NA" || path == null) ? "NA" : new java.io.File(params.outdir + "/" + params.label + "/fastq", new java.io.File(path.toString()).getName()).getCanonicalPath()} 
-        reads
-          | flatMap
-          | map { meta, illumina, nanopore -> ["id": meta.id, "illumina1": getOutPath(illumina[0]), "illumina2": getOutPath(illumina[1]), "nanopore": getOutPath(nanopore)] }
-          | collect
-          | SAVE_TO_CSV 
-          | set {samplesheet}
-        // SAVE_TO_CSV(reads.collect()).set { samplesheet }
-        //reads.view{ "SAVE_SHEET reads2: $it" }
-        //SAVE_TO_CSV(reads).csv.collectFile(name: 'samplesheet.csv', keepHeader: true).map { it }.set { samplesheet }
-        //SAVE_TO_CSV.out.versions.view{ "Versions: $it" }
-        //SAVE_TO_CSV.out.csv.view{ "Samplesheets: $it" }
-        //samplesheet = Channel.empty()
+        reads = reads.flatMap().map { meta, illumina, nanopore -> ["id": meta.id, "illumina1": getOutPath(illumina[0]), "illumina2": getOutPath(illumina[1]), "nanopore": getOutPath(nanopore)] }
+        SAVE_TO_CSV(reads).csv.collectFile(name: 'samplesheet.csv', keepHeader: true, storeDir: "${params.outdir}/${params.label}").map { it }.set { samplesheet }
 
     emit:
         samplesheet
 }
 
+
 process SAVE_TO_CSV {
+    tag "$id"
+    label 'process_medium'
 
-  input:
-    val reads
+    conda "conda-forge::python=3.9.5"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/python:3.9--1' :
+        'biocontainers/python:3.9--1' }"
 
-  output:
-    path 'samplesheet.csv', emit: samplesheet
+    input:
+        tuple val(id), val(illumina1), val(illumina2), val(nanopore)
 
-  exec:
-    mergeCsv(reads, task.workDir.resolve('samplesheet.csv'), sep: '\t')
+    output:
+        path '*.csv'       , emit: csv
+        path "versions.yml", emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
+
+    script: // This script is bundled with the pipeline, in nf-core/rnaseq/bin/
+        """
+        touch ${id}_samplesheet.csv
+        echo "ID,illumina1,illumina2,nanopore" >> ${id}_samplesheet.csv
+        echo "${id},${illumina1},${illumina2},${nanopore}" >> ${id}_samplesheet.csv
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            python: \$(python --version | sed 's/Python //g')
+        END_VERSIONS
+        """
 }
-
-// process SAVE_TO_CSV {
-//     tag "$id"
-//     label 'process_medium'
-
-//     conda "conda-forge::python=3.9.5"
-//     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-//         'https://depot.galaxyproject.org/singularity/python:3.9--1' :
-//         'biocontainers/python:3.9--1' }"
-
-//     input:
-//         tuple val(id), val(illumina1), val(illumina2), val(nanopore)
-
-//     output:
-//         path '*.csv'       , emit: csv
-//         path "versions.yml", emit: versions
-
-//     when:
-//         task.ext.when == null || task.ext.when
-
-//     script: // This script is bundled with the pipeline, in nf-core/rnaseq/bin/
-//         """
-//         touch ${id}_samplesheet.csv
-//         echo "ID,illumina1,illumina2,nanopore" >> ${id}_samplesheet.csv
-//         echo "${id},${illumina1},${illumina2},${nanopore}" >> ${id}_samplesheet.csv
-
-//         cat <<-END_VERSIONS > versions.yml
-//         "${task.process}":
-//             python: \$(python --version | sed 's/Python //g')
-//         END_VERSIONS
-//         """
-// }
-
-def create_write_channels(LinkedHashMap row) {
-
-
-
-}
-
-// include { mergeCsv } from 'plugin/nf-boost'
-
-// process RECORDS_TO_CSV {
-//   publishDir 'results'
-
-//   input:
-//   val records
-
-//   output:
-//   path 'records.txt'
-
-//   exec:
-//   def path = task.workDir.resolve('records.txt')
-//   mergeCsv(records, path, sep: '\t')
-// }
-
-
-// workflow {
-//   Channel.of( 1..10 )
-//     | map { i -> ['id': i, 'name': "record_${i}"] }
-//     | collect
-//     | RECORDS_TO_CSV
-//     | view { csv -> csv.text }
-// }
