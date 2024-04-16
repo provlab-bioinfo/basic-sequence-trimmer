@@ -21,9 +21,10 @@ process CHOPPER {
     def args   = task.ext.args   ?: ''
     def args2  = task.ext.args2  ?: ''
     def args3  = task.ext.args3  ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    def prefix = task.ext.prefix
+    def out = "${meta.id}_ONT.${prefix}.fastq.gz"
 
-    if ("$fastq" == "${prefix}.fastq.gz") error "Input and output names are the same, set prefix in module configuration to disambiguate!"
+    if ("$fastq" == out) error "Input and output names are the same, set prefix in module configuration to disambiguate!"
     """
     zcat \\
         $args \\
@@ -32,7 +33,7 @@ process CHOPPER {
         --threads $task.cpus \\
         $args2 | \\
     gzip \\
-        $args3 > ${prefix}.fastq.gz
+        $args3 > ${out}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

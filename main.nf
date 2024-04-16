@@ -28,8 +28,6 @@ workflow {
 
     // SUBWORKFLOW: Read in samplesheet
     LOAD_SHEET(file(params.sheet))
-    //ids = LOAD_SHEET.out.meta.map { meta -> [ meta , "NA" ] }
-    //ids.view{ it -> "IDs: " + it}
 
     // SUBWORKFLOW: Perform QC
     TRIM_ILLUMINA(LOAD_SHEET.out.illumina)
@@ -48,7 +46,7 @@ workflow {
     versions = versions.mix(DEHOST_NANOPORE.out.versions)
 
     // SUBWORKFLOW: Create new samplesheet
-    reads = illumina_reads.join(nanopore_reads, remainder: true)
+    reads = illumina_reads.join(nanopore_reads, remainder: true).view()
     SAVE_SHEET(reads.toList())
     samplesheet = SAVE_SHEET.out.samplesheet
 

@@ -20,10 +20,10 @@ process BBMAP_BBDUK {
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    def args = task.ext.args ?: ''    
+    def prefix = task.ext.prefix
     def raw      = meta.single_end ? "in=${reads[0]}" : "in1=${reads[0]} in2=${reads[1]}"
-    def trimmed  = meta.single_end ? "out=${prefix}.fastq.gz" : "out1=${prefix}_1.fastq.gz out2=${prefix}_2.fastq.gz"
+    def trimmed  = meta.single_end ? "out=${meta.id}_R1.${prefix}.fastq.gz" : "out1=${meta.id}_R1.${prefix}.fastq.gz out2=${meta.id}_R2.${prefix}.fastq.gz"
     def contaminants_fa = contaminants ? "ref=$contaminants" : ''
     """
     bbduk.sh \\

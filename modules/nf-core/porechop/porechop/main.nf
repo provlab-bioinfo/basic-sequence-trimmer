@@ -20,7 +20,8 @@ process PORECHOP_PORECHOP {
 
     script:
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    def prefix = task.ext.prefix
+    def out = "${meta.id}_ONT.${prefix}.fastq.gz"
     """
     porechop \\
         -i $reads \\
