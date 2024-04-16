@@ -15,12 +15,19 @@ process HOSTILE {
         path "versions.yml"  , emit: versions
 
     script:
+
+    def out1 = meta.single_end ? "${fastq}".split(/\./)[0] + ".fastq.gz" : "${fastq[0]}".split(/\./)[0] + ".fastq.gz"
+    def out2 = meta.single_end ? "" : "${fastq[1]}".split(/\./)[0] + ".fastq.gz"
+
     """
     if [ ${fastq[1]} == null ]
     then
-        hostile clean --fastq1 ${fastq[0]} --aligner minimap2 --index ${params.hostile_index_long}
+        hostile clean --fastq1 ${fastq[0]} --aligner minimap2 --index ${params.hostile_index_long} --force
+        #mv ${fastq[0]} ${out1}
     else
-        hostile clean --fastq1 ${fastq[0]} --fastq2 ${fastq[1]} --aligner bowtie2 --index ${params.hostile_index_short}
+        hostile clean --fastq1 ${fastq[0]} --fastq2 ${fastq[1]} --aligner bowtie2 --index ${params.hostile_index_short} --force
+        mv ${fastq[0]} ${out1}
+        mv ${fastq[1]} ${out2}
     fi
 
     cat <<-END_VERSIONS > versions.yml

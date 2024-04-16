@@ -65,7 +65,7 @@ workflow SAVE_SHEET {
         reads // channel: [ val(meta), ( [ illumina ] | nanopore ) ]
 
     main:
-        def getOutPath = {path -> (path == "NA" || path == null) ? "NA" : new java.io.File(params.outdir + "/" + params.label + "/fastq", new java.io.File(path.toString()).getName()).getCanonicalPath()} 
+        def getOutPath = {path -> (path == "NA" || path == null) ? "NA" : new java.io.File(params.outdir + "/" + params.label + "/fastq", new java.io.File(path.toString()).getName().split(/\./)[0] + ".fastq.gz" ).getCanonicalPath()} 
         reads = reads.flatMap().map { meta, illumina, nanopore -> ["id": meta.id, "illumina1": meta.single_end ? getOutPath(illumina) : getOutPath(illumina[0]), "illumina2": meta.single_end ? "NA" : getOutPath(illumina[1]), "nanopore": getOutPath(nanopore)] }
         samplesheet = SAVE_TO_CSV(reads).csv.collectFile(name: 'samplesheet.csv', keepHeader: true, storeDir: "${params.outdir}/${params.label}").map { it }
 
