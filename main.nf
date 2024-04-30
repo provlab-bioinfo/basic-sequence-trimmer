@@ -9,11 +9,6 @@
 nextflow.enable.dsl = 2
 WorkflowMain.initialise(workflow, params, log)
 
-// if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input samplesheet not specified!' }
-// if (params.platform != 'illumina' || params.platform == 'nanopore') {exit 1, "Platform must be either 'illumina' or 'nanopore'!" }
-// if ((params.sheet == null && params.folder) == null || (params.sheet != null && params.folder != null)) {
-//     exit 1, "Must specify one of '--folder' or '--sheet'!"}
-
 include { LOAD_SHEET }                  from './subworkflows/local/load_sheet'
 include { SAVE_SHEET }                  from './subworkflows/local/load_sheet'
 include { TRIM_ILLUMINA }               from './subworkflows/local/trim_illumina'
@@ -46,14 +41,13 @@ workflow {
     versions = versions.mix(DEHOST_NANOPORE.out.versions)
 
     // SUBWORKFLOW: Create new samplesheet
-    reads = illumina_reads.join(nanopore_reads, remainder: true).view()
+    reads = illumina_reads.join(nanopore_reads, remainder: true)
     SAVE_SHEET(reads.toList())
-    samplesheet = SAVE_SHEET.out.samplesheet
 
     // SUBWORKFLOW: Get versioning
     CUSTOM_DUMPSOFTWAREVERSIONS (versions.unique().collectFile(name: 'collated_versions.yml'))    
 
     emit:
-        samplesheet
+        samplesheet = SAVE_SHEET.out.samplesheet
         versions
 }
