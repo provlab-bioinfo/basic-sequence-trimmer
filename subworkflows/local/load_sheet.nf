@@ -65,42 +65,110 @@ workflow SAVE_SHEET {
         reads // channel: [ val(meta), ( [ illumina ] | nanopore ) ]
 
     main:
-        def getOutPath = {path -> (path == "NA" || path == null) ? "NA" : new java.io.File(params.outdir + "/" + params.label + "/fastq", new java.io.File(path.toString()).getName().split(/\./)[0] + ".fastq.gz" ).getCanonicalPath()} 
-        reads = reads.flatMap().map { meta, illumina, nanopore -> ["id": meta.id, "illumina1": meta.single_end ? getOutPath(illumina) : getOutPath(illumina[0]), "illumina2": meta.single_end ? "NA" : getOutPath(illumina[1]), "nanopore": getOutPath(nanopore)] }
-        samplesheet = SAVE_TO_CSV(reads).csv.collectFile(name: 'samplesheet.csv', keepHeader: true, storeDir: "${params.outdir}/${params.label}").map { it }
+        def getOutPath = {path -> (path == "NA" || path == null) ? '"NA"' : '"' + (new java.io.File(params.outdir + "/" + params.label + "/fastq", new java.io.File(path.toString()).getName().split(/\./)[0] + ".fastq.gz" ).getCanonicalPath()) + '"'} 
+        reads = reads.flatMap().map { meta, illumina, nanopore -> ['"' + meta.id + '"', meta.single_end ? getOutPath(illumina) : getOutPath(illumina[0]), meta.single_end ? "NA" : getOutPath(illumina[1]), getOutPath(nanopore)] }
+        SAVE_TO_CSV(reads.toList())
+        SAVE_TO_CSV.out.samplesheet.view{ "SAVE_SHEET: ${it}"}
 
     emit:
-        samplesheet
+        samplesheet = SAVE_TO_CSV.out.samplesheet
 }
 
 process SAVE_TO_CSV {
-    tag "$id"
+    tag "samplesheet.${params.label}.csv"
     label 'process_medium'
 
-    conda "conda-forge::python=3.9.5"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.9--1' :
-        'biocontainers/python:3.9--1' }"
+    // conda "conda-forge::python=3.9.5"
+    // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+    //     'https://depot.galaxyproject.org/singularity/python:3.9--1' :
+    //     'biocontainers/python:3.9--1' }"
 
     input:
-        tuple val(id), val(illumina1), val(illumina2), val(nanopore)
+        val (reads)
 
     output:
-        path '*.csv'       , emit: csv
-        path "versions.yml", emit: versions
+        path "*.csv"       , emit: samplesheet
 
     when:
         task.ext.when == null || task.ext.when
 
     script:
-        """
-        touch ${id}_samplesheet.csv
-        echo "ID,illumina1,illumina2,nanopore" >> ${id}_samplesheet.csv
-        echo "${id},${illumina1},${illumina2},${nanopore}" >> ${id}_samplesheet.csv
+         """
+        #!/usr/bin/env python
+        import sys, csv
 
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            python: \$(python --version | sed 's/Python //g')
-        END_VERSIONS
+        with open('samplesheet.${params.label}.csv', 'w') as f:
+            csv_writer = csv.writer(f)
+            csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
+            csv_writer.writerows(${reads})
+
+        with open('samplesheet.${params.label}.out.csv', 'w') as f:
+            csv_writer = csv.writer(f)
+            csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
+            csv_writer.writerows(${reads})
         """
 }
+
+// process UPDATE_PATH {
+//     tag "samplesheet.${params.label}.csv"
+//     label 'process_medium'
+
+//     conda "conda-forge::python=3.9.5"
+//     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+//         'https://depot.galaxyproject.org/singularity/python:3.9--1' :
+//         'biocontainers/python:3.9--1' }"
+
+//     input:
+//         tuple val(id), val(illumina1), val(illumina2), val(nanopore)
+
+//     output:
+//         path "*.csv"       , emit: csv
+//         path "versions.yml", emit: versions
+
+//     when:
+//         task.ext.when == null || task.ext.when
+
+//     script:
+//         """
+//         touch samplesheet.${params.label}.csv
+//         echo "ID,illumina1,illumina2,nanopore" >> samplesheet.${params.label}.csv
+//         echo "${id},${illumina1},${illumina2},${nanopore}" >> samplesheet.${params.label}.csv
+
+//         cat <<-END_VERSIONS > versions.yml
+//         "${task.process}":
+//             python: \$(python --version | sed 's/Python //g')
+//         END_VERSIONS
+//         """
+// }
+
+
+// process COPY_SHEET {
+//     tag "$samplesheet"
+//     label 'process_medium'
+
+//     conda "conda-forge::python=3.9.5"
+//     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+//         'https://depot.galaxyproject.org/singularity/python:3.9--1' :
+//         'biocontainers/python:3.9--1' }"
+
+//     input:
+//         path samplesheet // file: /path/to/samplesheet.csv
+
+//     output:
+//         path '*.csv'       , emit: csv
+//         path "versions.yml", emit: versions
+
+//     when:
+//         task.ext.when == null || task.ext.when  
+
+//     script:
+//     """
+//     cp $samplesheet \\
+//         samplesheet.old.csv
+    
+//     cat <<-END_VERSIONS > versions.yml
+//     "${task.process}":
+//         python: \$(python --version | sed 's/Python //g')
+//     END_VERSIONS
+//     """
+// } 
