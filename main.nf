@@ -9,8 +9,8 @@
 nextflow.enable.dsl = 2
 WorkflowMain.initialise(workflow, params, log)
 
-include { LOAD_SHEET }                  from './subworkflows/local/load_sheet'
-include { SAVE_SHEET }                  from './subworkflows/local/load_sheet'
+include { LOAD_SHEET }                  from './subworkflows/local/sheet_ops'
+include { SAVE_DATA }                   from './subworkflows/local/sheet_ops'
 include { TRIM_ILLUMINA }               from './subworkflows/local/trim_illumina'
 include { TRIM_NANOPORE }               from './subworkflows/local/trim_nanopore'
 include { DEHOST as DEHOST_ILLUMINA }   from './subworkflows/local/dehost'
@@ -42,12 +42,13 @@ workflow {
 
     // SUBWORKFLOW: Create new samplesheet
     reads = illumina_reads.join(nanopore_reads, remainder: true)
-    SAVE_SHEET(reads.toList())
+    SAVE_DATA(reads.toList())
 
     // SUBWORKFLOW: Get versioning
     CUSTOM_DUMPSOFTWAREVERSIONS (versions.unique().collectFile(name: 'collated_versions.yml'))    
 
     emit:
-        samplesheet = SAVE_SHEET.out.samplesheet
+        samplesheet = SAVE_DATA.out.samplesheet
+        files = SAVE_DATA.out.files
         versions
 }
