@@ -7,10 +7,13 @@ workflow DEHOST {
     main:
         versions = Channel.empty()
         
-        DEHOST_HOSTILE(reads)
-        versions = versions.mix(DEHOST_HOSTILE.out.versions.first())
+        if (!params.skip_dehost) {
+            DEHOST_HOSTILE(reads)
+            DEHOST_HOSTILE.out.fastq.set { reads }
+            versions = versions.mix(DEHOST_HOSTILE.out.versions.first())
+        }       
 
     emit:
-        reads = DEHOST_HOSTILE.out.fastq
+        reads
         versions
 }

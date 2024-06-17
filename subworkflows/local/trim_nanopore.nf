@@ -8,13 +8,17 @@ workflow TRIM_NANOPORE {
     main:
         versions = Channel.empty()
 
-        TRIM_PORECHOP(reads)
-        versions = versions.mix(TRIM_PORECHOP.out.versions.first())
+        if (!params.skip_qc) {
+            TRIM_PORECHOP(reads)
+            versions = versions.mix(TRIM_PORECHOP.out.versions.first())
 
-        TRIM_CHOPPER(TRIM_PORECHOP.out.reads)
-        versions = versions.mix(TRIM_CHOPPER.out.versions.first())
+            TRIM_CHOPPER(TRIM_PORECHOP.out.reads)
+            versions = versions.mix(TRIM_CHOPPER.out.versions.first())
+
+            reads = TRIM_CHOPPER.out.fastq
+        }    
 
     emit:
-        reads = TRIM_CHOPPER.out.fastq
+        reads
         versions
 }
