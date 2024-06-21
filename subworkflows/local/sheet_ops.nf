@@ -87,47 +87,17 @@ workflow SAVE_DATA {
         files = SAVE_FILES.out.files
 }
 
-// process SAVE_FILES {
-//     //tag "samplesheet.${params.label}.csv"
-//     //label 'process_medium'
-
-//     input:
-//         reads // channel: [ val(meta), ( [ illumina ] | nanopore ) ]
-
-//     //output:
-//     //    path "*", emit: files
-
-//     when:
-//         task.ext.when == null || task.ext.when
-
-//     script:
-//         files = Channel.empty()
-//         // reads.view()
-
-//         // reads.map { meta, illuminaFQ, nanopore -> [ illuminaFQ, nanopore ] }
-//         //     .flatten()
-//         //     .set { reads }
-        
-//         // reads.view()
-
-//         //reads.subscribe { println "SAVE_FILES | reads (before): $it" }
-//         //SAVE_FILE(reads)
-//         //reads.subscribe { println "SAVE_FILES | reads (after): $it" }
-
-//         // files.mix(SAVE_FILE.out.files)
-// }
-
 process SAVE_FILES {    
-    tag "$id"
+    tag "$read.simpleName"
     label 'process_medium'
 
     publishDir path: "${params.outdir}/${params.label}/fastq", mode: 'copy'
 
     input:
-        tuple val (id), val (read)
+        tuple val (id), file (read)
 
     output:
-        path "*", emit: files
+        path "*.fastq.gz", emit: files
         path "versions.yml"   , emit: versions
 
     when:
@@ -136,9 +106,10 @@ process SAVE_FILES {
     script:  
         file = read.toString()
         ext = file.indexOf('.')
-        newfile = file.substring(0, ext ) + ".final" + file.substring(ext)
+        newfile = "$read.simpleName" + ".fastq.gz"
         """
-        cp $file $newfile
+        touch $newfile
+        cat $file > $newfile
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -183,67 +154,3 @@ process SAVE_SHEET {
             csv_writer.writerows(${reads})
         """
 }
-
-// process UPDATE_PATH {
-//     tag "samplesheet.${params.label}.csv"
-//     label 'process_medium'
-
-//     conda "conda-forge::python=3.9.5"
-//     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-//         'https://depot.galaxyproject.org/singularity/python:3.9--1' :
-//         'biocontainers/python:3.9--1' }"
-
-//     input:
-//         tuple val(id), val(illumina1), val(illumina2), val(nanopore)
-
-//     output:
-//         path "*.csv"       , emit: csv
-//         path "versions.yml", emit: versions
-
-//     when:
-//         task.ext.when == null || task.ext.when
-
-//     script:
-//         """
-//         touch samplesheet.${params.label}.csv
-//         echo "ID,illumina1,illumina2,nanopore" >> samplesheet.${params.label}.csv
-//         echo "${id},${illumina1},${illumina2},${nanopore}" >> samplesheet.${params.label}.csv
-
-//         cat <<-END_VERSIONS > versions.yml
-//         "${task.process}":
-//             python: \$(python --version | sed 's/Python //g')
-//         END_VERSIONS
-//         """
-// }
-
-
-// process COPY_SHEET {
-//     tag "$samplesheet"
-//     label 'process_medium'
-
-//     conda "conda-forge::python=3.9.5"
-//     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-//         'https://depot.galaxyproject.org/singularity/python:3.9--1' :
-//         'biocontainers/python:3.9--1' }"
-
-//     input:
-//         path samplesheet // file: /path/to/samplesheet.csv
-
-//     output:
-//         path '*.csv'       , emit: csv
-//         path "versions.yml", emit: versions
-
-//     when:
-//         task.ext.when == null || task.ext.when  
-
-//     script:
-//     """
-//     cp $samplesheet \\
-//         samplesheet.old.csv
-    
-//     cat <<-END_VERSIONS > versions.yml
-//     "${task.process}":
-//         python: \$(python --version | sed 's/Python //g')
-//     END_VERSIONS
-//     """
-// } 
