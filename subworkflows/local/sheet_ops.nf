@@ -65,24 +65,26 @@ workflow SAVE_DATA {
         reads
 
     main:
-        reads.view()
-        files = reads.flatMap().map { meta, illuminaFQ, nanopore -> [ illuminaFQ, nanopore ] }.flatten().filter { it != null }
-        files.view()
+        // reads.view()
+        files = reads.flatMap().map { meta, illuminaFQ, nanopore -> [ illuminaFQ, nanopore ] }
+            .flatten()
+            .filter { it != null }.map{ file -> [(file =~ /.*\/(.*?)\..*/)[0][1], file]}
+        //files.view()
 
         SAVE_FILES(files)
-        SAVE_FILES.out.files.view()
+        //SAVE_FILES.out.files.view()
 
         def getOutPath = {path -> (path == "NA" || path == null) ? '"NA"' : '"' + (new java.io.File(params.outdir + "/" + params.label + "/fastq", new java.io.File(path.toString()).getName().split(/\./)[0] + ".fastq.gz" ).getCanonicalPath()) + '"'} 
         samples = reads.flatMap().map { meta, illumina, nanopore -> ['"' + meta.id + '"', meta.single_end ? getOutPath(illumina) : getOutPath(illumina[0]), meta.single_end ? "NA" : getOutPath(illumina[1]), getOutPath(nanopore)] }
-        samples.view()
-        //SAVE_SHEET(samples.toList())
-        //SAVE_SHEET.out.samplesheet.view{ "SAVE_SHEET: ${it}"}
+        // samples.view()
+        SAVE_SHEET(samples.toList())
+        // SAVE_SHEET.out.samplesheet.view{ "SAVE_SHEET: ${it}"}
 
     emit:
-        samplesheet = Channel.empty()
-        files = Channel.empty()
-        // samplesheet = SAVE_SHEET.out.samplesheet
-        // files = SAVE_FILES.out.files
+        // samplesheet = Channel.empty()
+        // files = Channel.empty()
+        samplesheet = SAVE_SHEET.out.samplesheet
+        files = SAVE_FILES.out.files
 }
 
 // process SAVE_FILES {
@@ -116,11 +118,13 @@ workflow SAVE_DATA {
 // }
 
 process SAVE_FILES {    
-    tag "$read"
+    tag "$id"
     label 'process_medium'
 
+    publishDir path: "${params.outdir}/${params.label}/fastq", mode: 'copy'
+
     input:
-        val (read)
+        tuple val (id), val (read)
 
     output:
         path "*", emit: files
@@ -170,12 +174,12 @@ process SAVE_SHEET {
 
         with open('samplesheet.${params.label}.csv', 'w') as f:
             csv_writer = csv.writer(f)
-            if (!exists) csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
+            if not exists: csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
             csv_writer.writerows(${reads})
 
         with open('samplesheet.${params.label}.out.csv', 'w') as f:
             csv_writer = csv.writer(f)
-            if (!exists) csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
+            if not exists: csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
             csv_writer.writerows(${reads})
         """
 }
