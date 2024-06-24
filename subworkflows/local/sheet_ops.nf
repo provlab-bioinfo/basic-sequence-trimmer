@@ -68,7 +68,7 @@ workflow SAVE_DATA {
         // reads.view()
         files = reads.flatMap().map { meta, illuminaFQ, nanopore -> [ illuminaFQ, nanopore ] }
             .flatten()
-            .filter { it != null }.map{ file -> [(file =~ /.*\/(.*?)\..*/)[0][1], file]}
+            .filter { it != null } //.map{ file -> [(file =~ /.*\/(.*?)\..*/)[0][1], file]}
         //files.view()
 
         SAVE_FILES(files)
@@ -94,7 +94,7 @@ process SAVE_FILES {
     publishDir path: "${params.outdir}/${params.label}/fastq", mode: 'copy'
 
     input:
-        tuple val (id), file (read)
+        file (read)
 
     output:
         path "*.fastq.gz", emit: files
