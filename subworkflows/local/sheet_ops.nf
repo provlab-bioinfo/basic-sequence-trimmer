@@ -91,7 +91,7 @@ process SAVE_FILES {
     tag "$read.simpleName"
     label 'process_medium'
 
-    publishDir path: "${params.outdir}/${params.label}/fastq", mode: 'copy'
+    // publishDir path: "${params.outdir}/${params.label}/fastq", mode: 'copy'
 
     input:
         file (read)
@@ -122,6 +122,8 @@ process SAVE_SHEET {
     tag "samplesheet.${params.label}.csv"
     label 'process_medium'
 
+    // publishDir path: "${params.outdir}/${params.label}/", mode: 'copy'
+
     // conda "conda-forge::python=3.9.5"
     // container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
     //     'https://depot.galaxyproject.org/singularity/python:3.9--1' :
@@ -131,7 +133,7 @@ process SAVE_SHEET {
         val (reads)
 
     output:
-        path "*.csv"       , emit: samplesheet
+        path "*.csv", emit: samplesheet
 
     when:
         task.ext.when == null || task.ext.when
@@ -148,9 +150,9 @@ process SAVE_SHEET {
             if not exists: csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
             csv_writer.writerows(${reads})
 
-        with open('samplesheet.${params.label}.out.csv', 'w') as f:
-            csv_writer = csv.writer(f)
-            if not exists: csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
-            csv_writer.writerows(${reads})
+        #with open('samplesheet.${params.label}.out.csv', 'w') as f:
+        #    csv_writer = csv.writer(f)
+        #    if not exists: csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
+        #    csv_writer.writerows(${reads})
         """
 }
