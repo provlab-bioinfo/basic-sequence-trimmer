@@ -21,9 +21,12 @@ workflow {
     
     versions = Channel.empty()
 
-    // SUBWORKFLOW: Read in samplesheet
-    LOAD_SHEET(file(params.sheet))
+    sheet = toAbsPath(params.sheet)
+    outdir = toAbsPath(params.outdir)
 
+    // SUBWORKFLOW: Read in samplesheet
+    LOAD_SHEET(sheet)
+    
     // SUBWORKFLOW: Perform QC
     TRIM_ILLUMINA(LOAD_SHEET.out.illumina)
     TRIM_NANOPORE(LOAD_SHEET.out.nanopore)
@@ -42,7 +45,10 @@ workflow {
 
     // SUBWORKFLOW: Create new samplesheet
     reads = illumina_reads.join(nanopore_reads, remainder: true)
-    SAVE_DATA(reads.toList())
+    SAVE_DATA(reads.toList(), outdir)
+
+    LOAD_SHEET.out.samplesheet.view{ "LOAD_SHEET: ${it}"}
+    SAVE_DATA.out.samplesheet.view{ "SAVE_DATA: ${it}"}
 
     // SUBWORKFLOW: Get versioning
     CUSTOM_DUMPSOFTWAREVERSIONS (versions.unique().collectFile(name: 'collated_versions.yml'))    
@@ -51,4 +57,8 @@ workflow {
         samplesheet = SAVE_DATA.out.samplesheet
         files = SAVE_DATA.out.files
         versions
+}
+
+def toAbsPath(String path) {  
+    return path ? new File(path.toString()).getCanonicalPath() : path  
 }

@@ -63,22 +63,23 @@ def checkRead(String read) {
 workflow SAVE_DATA {
     take:
         reads
+        outdir
 
     main:
-        // reads.view()
+        // SUBWORKFLOW: Save the files
         files = reads.flatMap().map { meta, illuminaFQ, nanopore -> [ illuminaFQ, nanopore ] }
             .flatten()
             .filter { it != null } //.map{ file -> [(file =~ /.*\/(.*?)\..*/)[0][1], file]}
-        //files.view()
-
+        
         SAVE_FILES(files)
         //SAVE_FILES.out.files.view()
 
-        def getOutPath = {path -> (path == "NA" || path == null) ? '"NA"' : '"' + (new java.io.File(params.outdir + "/" + params.label + "/fastq", new java.io.File(path.toString()).getName().split(/\./)[0] + ".fastq.gz" ).getCanonicalPath()) + '"'} 
+        // SUBWORKFLOW: Save the updated sample sheet
+        def getOutPath = {path -> (path == "NA" || path == null) ? '"NA"' : '"' + (new java.io.File(outdir + "/" + params.label + "/fastq", new java.io.File(path.toString()).getName().split(/\./)[0] + ".fastq.gz" ).getCanonicalPath()) + '"'} 
         samples = reads.flatMap().map { meta, illumina, nanopore -> ['"' + meta.id + '"', meta.single_end ? getOutPath(illumina) : getOutPath(illumina[0]), meta.single_end ? "NA" : getOutPath(illumina[1]), getOutPath(nanopore)] }
         // samples.view()
         SAVE_SHEET(samples.toList())
-        // SAVE_SHEET.out.samplesheet.view{ "SAVE_SHEET: ${it}"}
+        SAVE_SHEET.out.samplesheet.view{ "SAVE_SHEET: ${it}"}
 
     emit:
         // samplesheet = Channel.empty()
@@ -149,10 +150,5 @@ process SAVE_SHEET {
             csv_writer = csv.writer(f)
             if not exists: csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
             csv_writer.writerows(${reads})
-
-        #with open('samplesheet.${params.label}.out.csv', 'w') as f:
-        #    csv_writer = csv.writer(f)
-        #    if not exists: csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
-        #    csv_writer.writerows(${reads})
         """
 }
