@@ -1,8 +1,8 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/nf-core/pathogenseq/master/nextflow_schema.json",
-    "title": "nf-core/pathogenseq pipeline parameters",
-    "description": "pathogen sequence analysis",
+    "$id": "https://raw.githubusercontent.com/provlab-bioinfo/basic-sequence-trimmer/main/nextflow_schema.json",
+    "title": "basic-sequence-trimmer pipeline parameters",
+    "description": "trimmer for NGS reads",
     "type": "object",
     "definitions": {
         "input_output_options": {
@@ -46,20 +46,11 @@
                     "help_text": "This can be downloaded from: https://github.com/bede/hostile.",
                     "fa_icon": "fas fa-file-csv"
                 },
-                "platform": {
+                "label": {
                     "type": "string",
                     "fa_icon": "fas fa-hdd",
-                    "default": "illumina",
-                    "description": "Specifies the platform used to generate the sequences - available options are 'illumina|nanopore'.",
-                    "enum": [
-                        "illumina",
-                        "nanopore"
-                    ]
-                },
-                "igenomes_ignore": {
-                    "type": "boolean",
-                    "fa_icon": "fas fa-hdd",
-                    "description": "Whether ignore igenome configuration loading."
+                    "default": "processed",
+                    "description": "Specifies the label/directory that the trimmed files will be stored in."
                 },
                 "email": {
                     "type": "string",
@@ -67,11 +58,6 @@
                     "fa_icon": "fas fa-envelope",
                     "help_text": "Set this parameter to your e-mail address to get a summary e-mail with details of the run sent to you when the workflow exits. If set in your user config file (`~/.nextflow/config`) then you don't need to specify this on the command line for every run.",
                     "pattern": "^([a-zA-Z0-9_\\-\\.]+)@([a-zA-Z0-9_\\-\\.]+)\\.([a-zA-Z]{2,5})$"
-                },
-                "multiqc_title": {
-                    "type": "string",
-                    "description": "MultiQC report title. Printed as page header, used for filename if not otherwise specified.",
-                    "fa_icon": "fas fa-file-signature"
                 }
             }
         },
