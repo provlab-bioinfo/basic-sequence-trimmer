@@ -79,7 +79,6 @@ workflow SAVE_DATA {
         samples = reads.flatMap().map { meta, illumina, nanopore -> ['"' + meta.id + '"', meta.single_end ? getOutPath(illumina) : getOutPath(illumina[0]), meta.single_end ? "NA" : getOutPath(illumina[1]), getOutPath(nanopore)] }
         // samples.view()
         SAVE_SHEET(samples.toList())
-        SAVE_SHEET.out.samplesheet.view{ "SAVE_SHEET: ${it}"}
 
     emit:
         // samplesheet = Channel.empty()
@@ -134,7 +133,7 @@ process SAVE_SHEET {
         val (reads)
 
     output:
-        path "*.csv", emit: samplesheet
+        path "samplesheet.${params.label}.csv", emit: samplesheet
 
     when:
         task.ext.when == null || task.ext.when
@@ -144,11 +143,17 @@ process SAVE_SHEET {
         #!/usr/bin/env python
         import sys, csv, os.path
 
-        exists = os.path.isfile('samplesheet.${params.label}.csv')            
+        path = "samplesheet.${params.label}.csv"
 
-        with open('samplesheet.${params.label}.csv', 'w') as f:
+        exists = os.path.isfile(path)            
+
+        with open(path, 'w') as f:
             csv_writer = csv.writer(f)
             if not exists: csv_writer.writerow(["id","illumina1","illumina2","nanopore"])
             csv_writer.writerows(${reads})
         """
+}
+
+def toAbsPath(String path) {  
+    return path ? new File(path.toString()).getCanonicalPath() : path  
 }
