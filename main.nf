@@ -21,11 +21,11 @@ workflow {
     
     versions = Channel.empty()
 
-    sheet = toAbsPath(params.sheet)
+    input = toAbsPath(params.input)
     outdir = toAbsPath(params.outdir)
 
     // SUBWORKFLOW: Read in samplesheet
-    LOAD_SHEET(sheet)
+    LOAD_SHEET(input)
     
     // SUBWORKFLOW: Perform QC
     TRIM_ILLUMINA(LOAD_SHEET.out.illumina)
@@ -48,13 +48,14 @@ workflow {
     SAVE_DATA(reads.toList(), outdir)
 
     LOAD_SHEET.out.samplesheet.view{ "LOAD_SHEET: ${it}"}
-    SAVE_DATA.out.samplesheet.view{ "SAVE_DATA: ${it}"}
+    SAVE_DATA.out.samplesheet.view{ "SAVE_SHEET: ${it}"}
+    SAVE_DATA.out.files.view{ "SAVE_FILES: ${it}"}
 
     // SUBWORKFLOW: Get versioning
     CUSTOM_DUMPSOFTWAREVERSIONS (versions.unique().collectFile(name: 'collated_versions.yml'))    
 
     emit:
-        samplesheet = SAVE_DATA.out.samplesheet
+        output = SAVE_DATA.out.samplesheet
         files = SAVE_DATA.out.files
         versions
 }
