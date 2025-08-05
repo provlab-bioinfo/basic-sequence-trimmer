@@ -76,7 +76,7 @@ workflow SAVE_DATA {
 
         // SUBWORKFLOW: Save the updated sample sheet
         def getOutPath = {path -> (path == "NA" || path == null) ? '"NA"' : '"' + (new java.io.File(outdir + "/" + params.label + "/fastq", new java.io.File(path.toString()).getName().split(/\./)[0] + ".fastq.gz" ).getCanonicalPath()) + '"'} 
-        samples = reads.flatMap().map { meta, illumina, nanopore -> ['"' + meta.id + '"', meta.single_end ? getOutPath(illumina) : getOutPath(illumina[0]), meta.single_end ? "NA" : getOutPath(illumina[1]), getOutPath(nanopore)] }
+        samples = reads.flatMap().map { meta, illumina, nanopore -> ['"' + meta.id + '"', meta.single_end ? getOutPath(illumina) : getOutPath(illumina[0]), meta.single_end ? '"NA"' : getOutPath(illumina[1]), getOutPath(nanopore)] }
         // samples.view()
         SAVE_SHEET(samples.toList())
 
