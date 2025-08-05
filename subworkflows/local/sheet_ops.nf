@@ -35,6 +35,12 @@ workflow LOAD_SHEET {
 // Function to get list of [ meta, [ illumina1, illumina2 ], nanopore ]
 def create_read_channels(LinkedHashMap row) {
     
+    cols = ["id","illumina1","illumina2","nanopore"]
+    for (String col : cols) {
+        if (!row.containsKey(col))
+            exit 1, "ERROR: Please check input samplesheet -> column ${col} does not exist!"  
+    }
+
     def meta = [:]
     meta.id           = row.id
     meta.single_end   = !(row.illumina1 == 'NA') && !(row.illumina2 == 'NA') ? false : true
